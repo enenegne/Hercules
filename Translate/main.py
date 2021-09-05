@@ -3,7 +3,13 @@
 # This program is dedicated to the public domain under the CC0 license.
 
 """
-comment
+At first all used functions are defined, the main function at the last of the file.
+
+Usage:
+Example of a telegram-user using the bot:
+Starts the bot by sending /start, then proceeds to translation via the /translate
+command, get asked for the destination language and text to tranlate, then a translation 
+o the sent text is sent to the user. 
 """
 
 import logging
