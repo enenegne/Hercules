@@ -16,7 +16,7 @@ import logging
 from constants import API_TOKEN
 import translate_main
 
-from telegram import ReplyKeyboardMarkup, Update, ReplyKeyboardRemove
+from telegram import ReplyKeyboardMarkup, Update, ReplyKeyboardRemove, ParseMode
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -95,7 +95,7 @@ def received_information(update: Update, context: CallbackContext) -> int:
     text = update.message.text
 
     update.message.reply_text(
-        f"{dest_language}: {receive_translation(text)}"
+        f"{receive_translation(dest_language)}: {receive_translation(text)}"
     )
     
     return ConversationHandler.END
@@ -115,6 +115,38 @@ def done(update: Update, context: CallbackContext) -> None:
     user_data.clear()
     return ConversationHandler.END
 
+
+def list_langs(update: Update, context: CallbackContext) -> None:
+    """Sends a message with all available languages for translation"""
+    string_ = ''
+    for language in translate_main.list_languages():
+        if  translate_main.list_languages().index(language) != len(translate_main.list_languages()) - 1:
+            string_ += f"{language}, "
+        else:
+            string_ += f"{language}."
+            
+    update.message.reply_text(
+        string_
+    )
+
+
+def developer(update: Update, context: CallbackContext) -> None:
+    """Sends a message with information about the developer"""
+    update.message.reply_text(
+        "I am a young developer from Addis Ababa, Ethiopia.\
+        \nI am honestly not very experienced with what I do, but I do it with a grip to succeeding in it.\
+        \n\nHere are some ways to contact me \
+        \n<a href='https://www.linkedin.com/in/tariq-hamid/'>LinkedIn</a>\
+        \n<a href='https://github.com/tariq-hamid'>GitHub</a>\
+        \n<a href='https://www.instagram.com/tariq8.6/'>Instagram</a> :P\
+        \nYou can also contact me here @diifuso\
+        \n\nHercules is an open-source bot, I would like to expand it furthur in the services it offers. I mean not just translation.\
+        \nAnd Hercules is in need of more developers to develop it. If interested, contact me ASAP!!!",
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+
+
 def main() -> None:
     """Run the bot."""
     # Create the Updater and pass it your bot's token.
@@ -126,6 +158,15 @@ def main() -> None:
     # /start Handler
     start_handler = CommandHandler('start', start)
     dispatcher.add_handler(start_handler)
+    
+    # /list_langs Hanlder
+    list_langs_handler = CommandHandler('list_languages', list_langs)
+    dispatcher.add_handler(list_langs_handler)
+    
+    # /developer
+    developer_handler = CommandHandler('developer', developer)
+    dispatcher.add_handler(developer_handler)
+    
     
     # Add conversation handler for /translate with the states CHOOSING, TYPING_CHOICE and TYPING_REPLY
     translate_handler = ConversationHandler(
