@@ -1,0 +1,161 @@
+#!/usr/bin/env python
+# pylint: disable=C0116,W0613
+# This program is dedicated to the public domain under the CC0 license.
+
+"""
+comment
+"""
+
+import logging
+from constants import API_TOKEN
+import translate_main
+
+from telegram import ReplyKeyboardMarkup, Update, ReplyKeyboardRemove
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    Filters,
+    ConversationHandler,
+    CallbackContext
+)
+
+# Enable logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+
+CHOOSING, TYPING_REPLY, TYPING_CHOICE = range(3)
+
+# List of available languages  
+reply_keyboard = translate_main.list_languages()
+
+markup = ReplyKeyboardMarkup(([language] for language in reply_keyboard), one_time_keyboard=True)
+
+
+def receive_translation(text) -> str:
+    """Access the translation API"""
+    dest_lang = dest_language.lower()
+    untranslated_text = text
+    translated_text = translate_main.do_translation(dest_lang, untranslated_text)
+    
+    return translated_text
+
+
+def start(update: Update, context: CallbackContext) -> None:
+    """Start the conversation and ask user for input."""
+    # Say Hey
+
+    if update.message.from_user['username'] != None:
+        update.message.reply_text(f"Hey, @{update.message.from_user['username']} !")
+    elif update.message.from_user['username'] == None and update.message.from_user['first_name'] != None:
+        update.message.reply_text(f"Hey, {update.message.from_user['first_name']} !")
+    else:
+        update.message.reply_text("Hey there!")
+
+    # Give info about the bot 
+    update.message.reply_text(
+        "Hercules - Translate is a language translation bot that is currently under development.\
+        \n\nUse the Menu button to get started, or use /help.\
+        \n\nIf you encounter any errors, please feel free to give feedback for the developer, use /developer."
+    )
+
+
+def translate(update: Update, context: CallbackContext) -> int:
+    """Start handling translation"""
+    update.message.reply_text(
+        "Choose a langauge to translate to (destination language):",
+        reply_markup=markup,
+    )
+    
+    return CHOOSING
+
+
+def regular_choice(update: Update, context: CallbackContext) -> int:
+    """Ask the user for info about the selected predefined choice."""
+    global dest_language
+    dest_language = update.message.text
+    update.message.reply_text(
+        f'Okay, send me the text you want to translate to {dest_language.capitalize()}:'
+    )
+
+    return TYPING_REPLY
+
+
+def received_information(update: Update, context: CallbackContext) -> int:
+    """Store info provided by user and ask for the next category."""
+    text = update.message.text
+
+    update.message.reply_text(
+        f"{dest_language}: {receive_translation(text)}"
+    )
+    
+    return ConversationHandler.END
+
+
+def done(update: Update, context: CallbackContext) -> None:
+    """End conversation"""
+    user_data = context.user_data
+    if 'choice' in user_data:
+        del user_data['choice']
+    
+    update.message.reply_text(
+        "Okay, done!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    
+    user_data.clear()
+    return ConversationHandler.END
+
+def main() -> None:
+    """Run the bot."""
+    # Create the Updater and pass it your bot's token.
+    updater = Updater(API_TOKEN)
+
+    # Get the dispatcher to register handlers
+    dispatcher = updater.dispatcher
+
+    # /start Handler
+    start_handler = CommandHandler('start', start)
+    dispatcher.add_handler(start_handler)
+    
+    # Add conversation handler for /translate with the states CHOOSING, TYPING_CHOICE and TYPING_REPLY
+    translate_handler = ConversationHandler(
+        entry_points=[CommandHandler('translate', translate)],
+        states={
+            CHOOSING: [
+                MessageHandler(
+                    (Filters.text & (~Filters.command)), regular_choice
+                )
+            ],
+            TYPING_CHOICE: [
+                MessageHandler(
+                    Filters.text & ~(Filters.command), regular_choice
+                )
+            ],
+            TYPING_REPLY: [
+                MessageHandler(
+                    Filters.text & ~(Filters.command),
+                    received_information,
+                )
+            ],
+        },
+        
+        fallbacks=[MessageHandler(Filters.regex('^Done$'), done)],
+    )
+
+    dispatcher.add_handler(translate_handler)
+
+    # Start the Bot
+    updater.start_polling()
+
+    # Run the bot until you press Ctrl-C or the process receives SIGINT,
+    # SIGTERM or SIGABRT. This should be used most of the time, since
+    # start_polling() is non-blocking and will stop the bot gracefully.
+    updater.idle()
+
+
+if __name__ == '__main__':
+    main()
