@@ -147,6 +147,28 @@ def developer(update: Update, context: CallbackContext) -> None:
     )
 
 
+def help_(update: Update, context: CallbackContext) -> None:
+    """Send a message with information about the bot"""
+    update.message.reply_text(
+        "You can use this bot for in-telegram text translation, this bot is based on Google Translate api.\
+        \n\nTo view all available language for the translation service, use /list_languages\
+        \n\nTo translate a text, use /translate. Then:\
+        \n1. Send the destination Language\
+        \n2. Send the text you want to translate. You don't have to specify the language of the text you sent, that wll be detected by the bot.\
+        \n3. That's it, the bot will send you the translation.\
+        \n\nAll commands:\
+        \n/translate\
+        \n/list_languages\
+        \n/developer\
+        \n/help",
+        parse_mode=ParseMode.HTML
+    )
+
+
+def detect(update: Update, context: CallbackContext, text) -> None:
+    """Uses the language of text"""
+    
+
 def main() -> None:
     """Run the bot."""
     # Create the Updater and pass it your bot's token.
@@ -155,18 +177,9 @@ def main() -> None:
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
 
-    # /start Handler
+    # /start handler
     start_handler = CommandHandler('start', start)
     dispatcher.add_handler(start_handler)
-    
-    # /list_langs Hanlder
-    list_langs_handler = CommandHandler('list_languages', list_langs)
-    dispatcher.add_handler(list_langs_handler)
-    
-    # /developer
-    developer_handler = CommandHandler('developer', developer)
-    dispatcher.add_handler(developer_handler)
-    
     
     # Add conversation handler for /translate with the states CHOOSING, TYPING_CHOICE and TYPING_REPLY
     translate_handler = ConversationHandler(
@@ -192,11 +205,32 @@ def main() -> None:
         
         fallbacks=[MessageHandler(Filters.regex('^Done$'), done)],
     )
-
     dispatcher.add_handler(translate_handler)
-
+    
+    # /list_langs handler
+    list_langs_handler = CommandHandler('list_languages', list_langs)
+    dispatcher.add_handler(list_langs_handler)
+    
+    # /detect handler
+    detect_handler = CommandHandler('detect', detect)
+    dispatcher.add_handler(detect_handler)
+    
+    # /developer
+    developer_handler = CommandHandler('developer', developer)
+    dispatcher.add_handler(developer_handler)
+    
+    # /help
+    help_handler = CommandHandler('help', help_)
+    dispatcher.add_handler(help_handler)
+    
+    
     # Start the Bot
-    updater.start_polling()
+    updater.start_webhook(listen='0.0.0.0',
+                         port=8443,
+                         url_path=API_TOKEN,
+                         key='private.key',
+                         cert='cert.pem',
+                         webhook_url=f'https://b1qp84.deta.dev/:8443/{API_TOKEN}')
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
