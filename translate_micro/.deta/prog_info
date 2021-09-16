@@ -1,0 +1,1 @@
+{"id":"a006e72e-39ee-43a6-95df-caf1a0b337a4","space":10271,"runtime":"python3.7","name":"translate_micro","path":"u8hg7u","project":"a019883w","account":"144798365827","region":"eu-central-1","deps":["fastapi"],"envs":["KEY"],"public":true,"log_level":"debug","cron":""}
